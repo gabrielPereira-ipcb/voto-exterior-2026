@@ -47,6 +47,18 @@ h2 span{font-family:var(--mono);font-size:12px;color:var(--muted);font-weight:40
 .zoom button{width:32px;height:32px;border:1px solid var(--grid);border-radius:6px;background:var(--panel);color:var(--fg);font:500 18px/1 var(--body);cursor:pointer}
 .zoom button:hover{background:var(--bg)}
 .zoom button:focus-visible{outline:2px solid var(--flavio);outline-offset:1px}
+.stamp span{display:block}
+@media (max-width:560px){
+ body{padding-block:16px}
+ h1{font-size:26px}
+ section{padding:14px;gap:6px}
+ .row{grid-template-columns:1fr auto;row-gap:5px;column-gap:8px;padding-bottom:7px}
+ .row .name{grid-column:1;grid-row:1}
+ .row .pct{grid-column:2;grid-row:1}
+ .row .bar{grid-column:1/-1;grid-row:2;height:12px}
+ .zoom button{width:40px;height:40px;font-size:20px}
+ .legend{gap:10px 14px}
+}
 </style>
 <main>
 <header>
@@ -78,7 +90,8 @@ function srcPT(s){var m=/(\d+)\/(\d+)\/(\d+)\s+(\d+)h(\d+)/.exec(s);if(!m)return
 var CUR=EMBED,MAP=null,ZK=1,ZT=[0,0],ZW=0;
 function render(d){
  CUR=d;var P=d.paises;
- document.getElementById('stamp').textContent='Dados da fonte: '+srcPT(d.atualizado)+' · página verificada às '+hm(new Date())+(d.nota?' · '+d.nota:'');
+ var st=document.getElementById('stamp');st.textContent='';
+ ['Dados da fonte: '+srcPT(d.atualizado),'Página verificada às '+hm(new Date())].concat(d.nota?[d.nota]:[]).forEach(function(x){var s=document.createElement('span');s.textContent=x;st.appendChild(s)});
  var TL=0,TF=0,WL=0,WF=0,JL=0,JF=0;
  P.forEach(function(r){TL+=r.lula;TF+=r.flavio;if(r.lula>r.flavio)WL++;else WF++;if(r.nome=='Japão'){JL=r.lula;JF=r.flavio}});
  var TT=TL+TF,lp=100*TL/TT,xl=TL-JL,xf=TF-JF,xp=100*xl/(xl+xf);
@@ -102,12 +115,12 @@ function drawMap(P){
  if(typeof Datamap==='undefined'){document.getElementById('mapsec').hidden=true;return}
  var land=V('--land'),lc=V('--lula'),fc=V('--flavio'),panel=V('--panel'),dark='#12303a';
  document.getElementById('gl').style.background='linear-gradient(90deg,'+land+','+mix(land,lc,1)+')';
- var W=box.clientWidth||800,H=Math.round(W/2.7),LAT0=11;
+ var W=box.clientWidth||800,SM=W<560,H=Math.round(SM?W*0.75:W/2.7),LAT0=11,RS=Math.min(1,W/860);
  box.style.height=H+'px';
  var fills={defaultFill:land,L:lc,F:fc},data={},bub=[];
  P.forEach(function(r){var t=r.lula+r.flavio,m=Math.abs(r.lula/t-0.5),lead=r.lula>r.flavio?lc:fc,col=mix(land,lead,Math.min(1,0.3+1.4*m));
   r.iso.forEach(function(i){fills[i]=col;data[i]={fillKey:i}});
-  bub.push({name:r.nome,latitude:r.lat,longitude:r.lon,radius:Math.max(3,Math.sqrt(t)/6),fillKey:r.lula>r.flavio?'L':'F',highlightFillColor:mix(lead,dark,0.25),highlightBorderColor:dark,l:r.lula,f:r.flavio,t:t})});
+  bub.push({name:r.nome,latitude:r.lat,longitude:r.lon,radius:Math.max(3,Math.sqrt(t)/6*RS),fillKey:r.lula>r.flavio?'L':'F',highlightFillColor:mix(lead,dark,0.25),highlightBorderColor:dark,l:r.lula,f:r.flavio,t:t})});
  bub.sort(function(a,b){return b.radius-a.radius});
  MAP=new Datamap({element:box,responsive:true,width:W,height:H,aspectRatio:H/W,fills:fills,data:data,
   setProjection:function(el){var s=W/(2*Math.PI),pr=d3.geo.equirectangular().scale(s).rotate([0,0]).translate([W/2,H/2+LAT0*s*Math.PI/180]);return{path:d3.geo.path().projection(pr),projection:pr}},
@@ -130,8 +143,10 @@ function drawMap(P){
  function by(k){var s=Math.max(1,Math.min(14,ZK*k)),c=[W/2,H/2];applyZ(s,[c[0]-(c[0]-ZT[0])*s/ZK,c[1]-(c[1]-ZT[1])*s/ZK])}
  document.getElementById('zi').onclick=function(){by(1.6)};
  document.getElementById('zo').onclick=function(){by(1/1.6)};
- document.getElementById('zr').onclick=function(){applyZ(1,[0,0])};
- if(ZK>1&&ZW===W)applyZ(ZK,ZT);else{ZK=1;ZT=[0,0];ZW=W}
+ /* no telemóvel a vista inicial já vem aproximada: da Europa à Oceania */
+ var HK=SM?2:1,HX=(80+180)/360*W,HY=H/2+(LAT0-11)*W/360,HT=SM?[W/2-HX*HK,H/2-HY*HK]:[0,0];
+ document.getElementById('zr').onclick=function(){applyZ(HK,HT)};
+ if(ZK>1&&ZW===W)applyZ(ZK,ZT);else{ZW=W;applyZ(HK,HT)}
  document.getElementById('mapnote').textContent='O Japão é a maior bolha porque tem o maior bloco de eleitores fora do Brasil. Países com margem pequena ficam quase da cor da terra. Zoom: botões + e −, Ctrl + roda do mouse ou pinça no telemóvel; arraste para mover.';
 }
 var RT=null,LW=0;
