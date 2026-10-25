@@ -28,16 +28,14 @@ section{background:var(--panel);border:1px solid var(--grid);border-radius:10px;
 .bar i{display:block;height:100%}
 .prog{font-size:13px;color:var(--muted)}
 .prog b{color:var(--fg)}
-/* tile map: 7 linhas x 7 colunas, posição aproximada dos estados */
-.tiles{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;max-width:560px;width:100%;margin:0 auto}
-.t{aspect-ratio:1;border:1px solid var(--grid);border-radius:8px;background:var(--land);color:var(--fg);font:inherit;padding:2px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;line-height:1.15}
-.t b{font:500 14px var(--body)}
-.t small{font:400 11px var(--mono)}
-.t.sel{outline:3px solid var(--fg);outline-offset:1px;z-index:1}
-.t:focus-visible{outline:3px solid var(--fg);outline-offset:1px}
-.t.zero{color:var(--muted)}
-.t .pg{position:absolute;left:6px;right:6px;bottom:4px;height:3px;border-radius:2px;background:rgba(18,48,58,.15);overflow:hidden}
-.t .pg i{display:block;height:100%;background:var(--fg);opacity:.55}
+/* mapa: estados pintados pelo líder + bolhas com os votos */
+#map{width:100%;max-width:560px;margin:0 auto}
+#map svg{display:block;width:100%;height:auto}
+.st{stroke:#fff;stroke-width:.6;cursor:pointer}
+.st.sel{stroke:var(--fg);stroke-width:2}
+.st:focus-visible{outline:none;stroke:var(--fg);stroke-width:2}
+.bb{pointer-events:none;stroke:#fff;stroke-width:1.2;fill-opacity:.85}
+.lb{pointer-events:none;font:500 9px var(--body);fill:var(--fg);text-anchor:middle}
 .legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--muted)}
 .legend .g{display:inline-block;width:70px;height:10px;border-radius:3px;margin:0 6px;vertical-align:-1px}
 .detail{border:1px solid var(--grid);border-radius:8px;padding:12px 14px;font-size:14px;line-height:1.5;min-height:92px}
@@ -54,7 +52,6 @@ section{background:var(--panel);border:1px solid var(--grid);border-radius:10px;
  h1{font-size:26px}
  section{padding:14px}
  .big .n{font-size:34px}
- .t b{font-size:12.5px}.t small{font-size:10px}
  .row{grid-template-columns:1fr auto;row-gap:5px;column-gap:8px}
  .row .bar{grid-column:1/-1;grid-row:2;height:12px}
  .row .pct{grid-row:1;grid-column:2}
@@ -70,15 +67,16 @@ section{background:var(--panel);border:1px solid var(--grid);border-radius:10px;
 </header>
 <section id="g"></section>
 <section>
-<h2>Estados<span>cor = quem lidera · toque num estado para ver os números</span></h2>
-<div class="tiles" id="tiles"></div>
-<div class="legend"><span><i class="sw" style="background:var(--lula)"></i> Lula lidera</span><span><i class="sw" style="background:var(--flavio)"></i> Flávio lidera</span><span>Margem: pequena<i class="g" id="gl"></i>grande</span><span>Sem votos: cinza</span></div>
+<h2>Mapa<span>cor = quem lidera · bolha = votos · toque num estado</span></h2>
+<div id="map"><svg id="svg" viewBox="0 0 560 580" role="img" aria-label="Mapa do Brasil por estado"></svg></div>
+<div class="legend"><span><i class="sw" style="background:var(--lula)"></i> Lula lidera</span><span><i class="sw" style="background:var(--flavio)"></i> Flávio lidera</span><span>Margem: pequena<i class="g" id="gl"></i>grande</span><span>Bolha = votos apurados</span><span>Sem votos: cinza</span></div>
 <div class="detail" id="detail"></div>
 <p class="note" id="mapnote"></p>
 </section>
 <div id="c" style="display:flex;flex-direction:column;gap:20px"></div>
-<p class="note">Fonte: <a href="https://resultados.tse.jus.br/">TSE, resultados.tse.jus.br</a>. A grelha de estados é um esquema: cada quadrado é um estado, na posição aproximada do mapa, sem o tamanho real. Quando poucas urnas estão apuradas, o resultado do estado muda muito: estados do Norte e do Nordeste costumam entrar primeiro, por isso o total nacional ainda não é uma previsão. O TSE publica o total nacional e os ficheiros de cada estado em separado, e os estados às vezes ficam atrás: por isso a soma dos estados pode ser menor que o total nacional.</p>
+<p class="note">Fonte: <a href="https://resultados.tse.jus.br/">TSE, resultados.tse.jus.br</a>. Contornos dos estados: simplificados a partir de dados abertos (click_that_hood). Quando poucas urnas estão apuradas, o resultado do estado muda muito: estados do Norte e do Nordeste costumam entrar primeiro, por isso o total nacional ainda não é uma previsão. O TSE publica o total nacional e os ficheiros de cada estado em separado, e os estados às vezes ficam atrás: por isso a soma dos estados pode ser menor que o total nacional.</p>
 </main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script>
 var EMBED={"ufs": {"AC": {"lula": 0, "flavio": 0, "st": 0, "ts": 2270, "utc": "2026-10-13T20:42:47Z"}, "AL": {"lula": 0, "flavio": 0, "st": 0, "ts": 7101, "utc": "2026-10-13T20:42:57Z"}, "AM": {"lula": 0, "flavio": 0, "st": 0, "ts": 8157, "utc": "2026-10-13T20:43:07Z"}, "AP": {"lula": 0, "flavio": 0, "st": 0, "ts": 1914, "utc": "2026-10-13T20:43:17Z"}, "BA": {"lula": 1148, "flavio": 442, "st": 6, "ts": 35476, "utc": "2026-10-25T20:07:00Z"}, "CE": {"lula": 782, "flavio": 335, "st": 4, "ts": 23765, "utc": "2026-10-25T20:07:00Z"}, "DF": {"lula": 0, "flavio": 0, "st": 0, "ts": 6969, "utc": "2026-10-09T20:30:52Z"}, "ES": {"lula": 0, "flavio": 0, "st": 0, "ts": 9844, "utc": "2026-10-13T20:45:07Z"}, "GO": {"lula": 768, "flavio": 943, "st": 6, "ts": 15686, "utc": "2026-10-25T20:07:00Z"}, "MA": {"lula": 2228, "flavio": 709, "st": 19, "ts": 18093, "utc": "2026-10-25T20:07:00Z"}, "MG": {"lula": 0, "flavio": 0, "st": 0, "ts": 52062, "utc": "2026-10-13T20:46:47Z"}, "MS": {"lula": 0, "flavio": 0, "st": 0, "ts": 7106, "utc": "2026-10-13T20:46:57Z"}, "MT": {"lula": 0, "flavio": 0, "st": 0, "ts": 8287, "utc": "2026-10-13T20:47:07Z"}, "PA": {"lula": 22949, "flavio": 12343, "st": 179, "ts": 20827, "utc": "2026-10-25T20:07:00Z"}, "PB": {"lula": 0, "flavio": 0, "st": 0, "ts": 10712, "utc": "2026-10-13T20:48:07Z"}, "PE": {"lula": 0, "flavio": 0, "st": 0, "ts": 21418, "utc": "2026-10-25T20:07:00Z"}, "PI": {"lula": 0, "flavio": 0, "st": 0, "ts": 10225, "utc": "2026-10-13T20:48:27Z"}, "PR": {"lula": 0, "flavio": 0, "st": 0, "ts": 27142, "utc": "2026-10-13T20:48:38Z"}, "RJ": {"lula": 0, "flavio": 0, "st": 0, "ts": 37675, "utc": "2026-10-13T20:48:47Z"}, "RN": {"lula": 0, "flavio": 0, "st": 0, "ts": 8115, "utc": "2026-10-13T20:48:57Z"}, "RO": {"lula": 0, "flavio": 0, "st": 0, "ts": 4698, "utc": "2026-10-13T20:49:07Z"}, "RR": {"lula": 0, "flavio": 0, "st": 0, "ts": 1519, "utc": "2026-10-13T20:49:17Z"}, "RS": {"lula": 0, "flavio": 0, "st": 0, "ts": 27547, "utc": "2026-10-13T20:49:27Z"}, "SC": {"lula": 0, "flavio": 0, "st": 0, "ts": 17326, "utc": "2026-10-13T20:49:37Z"}, "SE": {"lula": 0, "flavio": 0, "st": 0, "ts": 5923, "utc": "2026-10-24T22:32:12Z"}, "SP": {"lula": 0, "flavio": 0, "st": 0, "ts": 103656, "utc": "2026-10-13T20:50:07Z"}, "TO": {"lula": 0, "flavio": 0, "st": 0, "ts": 4384, "utc": "2026-10-25T18:40:09Z"}}, "br": {"lula": 193574, "flavio": 142169, "st": 1225, "ts": 499248, "utc": "2026-10-25T20:06:31Z"}, "atualizado": "2026-10-25T20:07:00Z"};
 /* uf: [nome, região, coluna, linha] */
@@ -96,7 +94,28 @@ function mix(a,b,t){var A=hex(a),B=hex(b);return '#'+A.map(function(v,i){var x=M
 function hm(t){var o={hour:'2-digit',minute:'2-digit',hourCycle:'h23'};
  return t.toLocaleTimeString('pt-PT',Object.assign({timeZone:'America/Sao_Paulo'},o))+' Brasília · '+t.toLocaleTimeString('pt-PT',Object.assign({timeZone:'Europe/Lisbon'},o))+' Portugal'}
 function dayPT(t){return t.toLocaleDateString('pt-PT',{timeZone:'Europe/Lisbon',day:'2-digit',month:'2-digit',year:'numeric'})}
-var CUR=EMBED,SEL=null;
+var CUR=EMBED,SEL=null,GEO=null,W0=560,H0=580;
+function drawMap(d,land,lc,fc){
+ var svg=document.getElementById('svg');if(!GEO||typeof d3==='undefined'){svg.innerHTML='';document.getElementById('map').hidden=true;return}
+ document.getElementById('map').hidden=false;
+ var pr=d3.geoMercator().fitExtent([[6,6],[W0-6,H0-6]],GEO),path=d3.geoPath(pr),S=d3.select(svg);S.selectAll('*').remove();
+ var maxT=1;Object.keys(d.ufs).forEach(function(k){maxT=Math.max(maxT,stat(d.ufs[k]).t)});
+ var g=S.append('g');
+ GEO.features.forEach(function(ft){var k=ft.properties.uf,r=d.ufs[k]||{lula:0,flavio:0},x=stat(r),col=land;
+  if(x.t){var m=Math.abs(x.l-50)/50;col=mix(land,r.lula>r.flavio?lc:fc,Math.min(1,0.25+1.5*m))}
+  g.append('path').attr('d',path(ft)).attr('class','st'+(SEL===k?' sel':'')).attr('fill',col).attr('tabindex',0).attr('role','button')
+   .attr('aria-label',UF[k][0]+': '+(x.t?'Lula '+p(x.l)+', Flávio '+p(x.f):'sem votos apurados'))
+   .on('click',function(){SEL=SEL===k?null:k;render(CUR)}).on('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();SEL=SEL===k?null:k;render(CUR)}})
+   .append('title').text(UF[k][0]+(x.t?': Lula '+p(x.l)+' · Flávio '+p(x.f):': sem votos'));
+ });
+ var B=S.append('g');
+ GEO.features.forEach(function(ft){var k=ft.properties.uf,r=d.ufs[k]||{lula:0,flavio:0},x=stat(r);if(!x.t)return;
+  var c=path.centroid(ft),R=Math.max(9,Math.sqrt(x.t/maxT)*40);
+  B.append('circle').attr('class','bb').attr('cx',c[0]).attr('cy',c[1]).attr('r',R).attr('fill',r.lula>r.flavio?lc:fc);
+  B.append('text').attr('class','lb').attr('x',c[0]).attr('y',c[1]+3).text(k).style('fill','#fff')});
+ /* siglas dos estados sem bolha, em cinza escuro */
+ var L=S.append('g');GEO.features.forEach(function(ft){var k=ft.properties.uf,x=stat(d.ufs[k]||{lula:0,flavio:0});if(x.t)return;var c=path.centroid(ft);L.append('text').attr('class','lb').attr('x',c[0]).attr('y',c[1]+3).text(k).style('fill','#4d6c75')});
+}
 function stat(r){var t=r.lula+r.flavio;return t?{t:t,l:100*r.lula/t,f:100*r.flavio/t}:{t:0,l:0,f:0}}
 function render(d){
  CUR=d;
@@ -111,25 +130,20 @@ function render(d){
  +'<div class="prog"><b>'+pg.toFixed(2).replace('.',',')+'%</b> das seções apuradas ('+f(b.st)+' de '+f(b.ts)+')'+(s.t?' · '+lead+' à frente por '+f(Math.abs(b.lula-b.flavio))+' votos':'')+'. Lula lidera em '+cl+' estados e Flávio em '+cf+'.</div>';
  var land=V('--land'),lc=V('--lula'),fc=V('--flavio');
  document.getElementById('gl').style.background='linear-gradient(90deg,'+land+',#8d9a96)';
- var html='';Object.keys(UF).forEach(function(k){var u=UF[k],r=d.ufs[k]||{lula:0,flavio:0,st:0,ts:1},x=stat(r),zero=!x.t,col=land,txt='sem votos';
-  if(!zero){var win=r.lula>r.flavio?lc:fc,m=Math.abs(x.l-50)/50;col=mix(land,win,Math.min(1,0.25+1.5*m));txt=p(Math.max(x.l,x.f))}
-  var dark=!zero&&Math.abs(x.l-50)>12;
-  html+='<button type="button" class="t'+(zero?' zero':'')+(SEL===k?' sel':'')+'" data-k="'+k+'" style="grid-column:'+(u[2]+1)+';grid-row:'+(u[3]+1)+';background:'+col+(dark?';color:#fff':'')+'" aria-label="'+u[0]+': '+(zero?'sem votos apurados':'Lula '+p(x.l)+', Flávio '+p(x.f))+'"><b>'+k+'</b><small>'+(zero?'—':txt)+'</small><span class="pg"><i style="width:'+(100*r.st/r.ts)+'%"></i></span></button>'});
- var T=document.getElementById('tiles');T.innerHTML=html;
- T.querySelectorAll('.t').forEach(function(e){e.onclick=function(){SEL=SEL===e.dataset.k?null:e.dataset.k;render(CUR)}});
+ drawMap(d,land,lc,fc);
  var D=document.getElementById('detail');
  if(SEL){var u=UF[SEL],r=d.ufs[SEL],x=stat(r);D.innerHTML='<h3>'+u[0]+' ('+SEL+')</h3>'+(x.t?'Lula '+f(r.lula)+' votos ('+p(x.l)+')<br>Flávio '+f(r.flavio)+' votos ('+p(x.f)+')<br>':'Ainda sem votos apurados.<br>')+'Seções apuradas: '+f(r.st)+' de '+f(r.ts)+' ('+(100*r.st/r.ts).toFixed(1).replace('.',',')+'%)'}
- else D.innerHTML='<h3>Toque num estado</h3>Mostra os votos de cada candidato e quantas seções já foram apuradas. A barrinha em baixo de cada quadrado mostra o avanço da apuração.';
+ else D.innerHTML='<h3>Toque num estado</h3>Mostra os votos de cada candidato e quantas seções já foram apuradas. Estados cinzentos ainda não têm votos.';
  var out='';REG.forEach(function(g){var items=Object.keys(UF).filter(function(k){return UF[k][1]===g}).sort(function(a,c){return stat(d.ufs[c]||{lula:0,flavio:0}).t-stat(d.ufs[a]||{lula:0,flavio:0}).t});
   out+='<section><h2>'+g+'</h2>';
   items.forEach(function(k){var r=d.ufs[k]||{lula:0,flavio:0},x=stat(r),z=!x.t;
    out+='<div class="row'+(z?' zero':'')+'" title="'+UF[k][0]+'"><span class="name">'+UF[k][0]+'</span><div class="bar">'+(z?'':'<i style="width:'+x.l+'%;background:var(--lula)"></i><i style="width:'+x.f+'%;background:var(--flavio)"></i>')+'</div><span class="pct">'+(z?'sem votos':p(x.l)+' / '+p(x.f))+'</span></div>'});
   out+='</section>'});
  document.getElementById('c').innerHTML=out;
- document.getElementById('mapnote').textContent='Quadrados cinzentos são estados sem votos apurados ainda. Quanto menor a margem, mais perto do cinza.';
+ document.getElementById('mapnote').textContent='Estados cinzentos ainda não têm votos apurados. Quanto menor a margem, mais perto do cinza. O tamanho da bolha compara os estados entre si.';
 }
 function load(){fetch('data.json?'+Date.now()).then(function(r){if(!r.ok)throw 0;return r.json()}).then(render).catch(function(){})}
-render(EMBED);load();setInterval(load,600000);
+fetch('estados.geojson').then(function(r){return r.json()}).then(function(g){GEO=g;render(CUR)}).catch(function(){});render(EMBED);load();setInterval(load,600000);
 </script>
 </body>
 </html>
