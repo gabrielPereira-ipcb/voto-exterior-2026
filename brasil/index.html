@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Brasil 2026 por estado</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+/* layout: hero com o total nacional, grelha de estados (tile map) pintada pelo líder, lista por região.
+   Paleta oceano e coral, como o site do voto no exterior. */
+:root{--bg:#eaf3f4;--panel:#fff;--land:#eef0ea;--grid:#c3d8dc;--fg:#12303a;--muted:#4d6c75;--lula:#d9482b;--flavio:#0f8f84;--display:'Fraunces',Georgia,serif;--body:'IBM Plex Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,monospace;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
+main{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--display);font-size:32px;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-size:19px;margin:0;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+h2 span{font:400 12.5px var(--body);color:var(--muted)}
+.sub{margin:6px 0 0;color:var(--muted);font-size:14px;line-height:1.5;max-width:70ch}
+.stamp span{display:block;font:400 12.5px var(--mono);color:var(--muted);margin-top:2px}
+section{background:var(--panel);border:1px solid var(--grid);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.big{display:flex;gap:12px;flex-wrap:wrap}
+.big>div{flex:1 1 200px}
+.big .n{font:600 40px/1.1 var(--display)}
+.big .v{font:400 13px var(--mono);color:var(--muted)}
+.big .l{font-size:14px;font-weight:500;display:flex;align-items:center;gap:6px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:50%}
+.bar{display:flex;height:22px;border-radius:5px;overflow:hidden;background:var(--land)}
+.bar i{display:block;height:100%}
+.prog{font-size:13px;color:var(--muted)}
+.prog b{color:var(--fg)}
+/* tile map: 7 linhas x 7 colunas, posição aproximada dos estados */
+.tiles{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;max-width:560px;width:100%;margin:0 auto}
+.t{aspect-ratio:1;border:1px solid var(--grid);border-radius:8px;background:var(--land);color:var(--fg);font:inherit;padding:2px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;line-height:1.15}
+.t b{font:500 14px var(--body)}
+.t small{font:400 11px var(--mono)}
+.t.sel{outline:3px solid var(--fg);outline-offset:1px;z-index:1}
+.t:focus-visible{outline:3px solid var(--fg);outline-offset:1px}
+.t.zero{color:var(--muted)}
+.t .pg{position:absolute;left:6px;right:6px;bottom:4px;height:3px;border-radius:2px;background:rgba(18,48,58,.15);overflow:hidden}
+.t .pg i{display:block;height:100%;background:var(--fg);opacity:.55}
+.legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--muted)}
+.legend .g{display:inline-block;width:70px;height:10px;border-radius:3px;margin:0 6px;vertical-align:-1px}
+.detail{border:1px solid var(--grid);border-radius:8px;padding:12px 14px;font-size:14px;line-height:1.5;min-height:92px}
+.detail h3{margin:0 0 4px;font:600 17px var(--display)}
+.note{font-size:12.5px;color:var(--muted);line-height:1.55;max-width:70ch;margin:0}
+.note a{color:inherit}
+.row{display:grid;grid-template-columns:minmax(90px,150px) 1fr 150px;gap:10px;align-items:center;font-size:13px;border-bottom:1px solid var(--grid);padding-bottom:6px}
+.row:last-child{border-bottom:0}
+.row .name{font-weight:500}
+.row .pct{font:400 12.5px var(--mono);text-align:right}
+.row.zero .name,.row.zero .pct{color:var(--muted)}
+@media (max-width:560px){
+ body{padding-top:16px}
+ h1{font-size:26px}
+ section{padding:14px}
+ .big .n{font-size:34px}
+ .t b{font-size:12.5px}.t small{font-size:10px}
+ .row{grid-template-columns:1fr auto;row-gap:5px;column-gap:8px}
+ .row .bar{grid-column:1/-1;grid-row:2;height:12px}
+ .row .pct{grid-row:1;grid-column:2}
+}
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>Brasil 2026: Lula contra Flávio Bolsonaro, por estado</h1>
+<p class="sub">Resultado do 2º turno para presidente, no Brasil, apurado pelo TSE. Os números sobem à medida que as urnas são apuradas.</p>
+<div class="stamp" id="stamp"></div>
+</header>
+<section id="g"></section>
+<section>
+<h2>Estados<span>cor = quem lidera · toque num estado para ver os números</span></h2>
+<div class="tiles" id="tiles"></div>
+<div class="legend"><span><i class="sw" style="background:var(--lula)"></i> Lula lidera</span><span><i class="sw" style="background:var(--flavio)"></i> Flávio lidera</span><span>Margem: pequena<i class="g" id="gl"></i>grande</span><span>Sem votos: cinza</span></div>
+<div class="detail" id="detail"></div>
+<p class="note" id="mapnote"></p>
+</section>
+<div id="c" style="display:flex;flex-direction:column;gap:20px"></div>
+<p class="note">Fonte: <a href="https://resultados.tse.jus.br/">TSE, resultados.tse.jus.br</a>. A grelha de estados é um esquema: cada quadrado é um estado, na posição aproximada do mapa, sem o tamanho real. Quando poucas urnas estão apuradas, o resultado do estado muda muito: estados do Norte e do Nordeste costumam entrar primeiro, por isso o total nacional ainda não é uma previsão. O TSE publica o total nacional e os ficheiros de cada estado em separado, e os estados às vezes ficam atrás: por isso a soma dos estados pode ser menor que o total nacional.</p>
+</main>
+<script>
+var EMBED={"ufs": {"AC": {"lula": 0, "flavio": 0, "st": 0, "ts": 2270, "utc": "2026-10-13T20:42:47Z"}, "AL": {"lula": 0, "flavio": 0, "st": 0, "ts": 7101, "utc": "2026-10-13T20:42:57Z"}, "AM": {"lula": 0, "flavio": 0, "st": 0, "ts": 8157, "utc": "2026-10-13T20:43:07Z"}, "AP": {"lula": 0, "flavio": 0, "st": 0, "ts": 1914, "utc": "2026-10-13T20:43:17Z"}, "BA": {"lula": 1148, "flavio": 442, "st": 6, "ts": 35476, "utc": "2026-10-25T20:07:00Z"}, "CE": {"lula": 782, "flavio": 335, "st": 4, "ts": 23765, "utc": "2026-10-25T20:07:00Z"}, "DF": {"lula": 0, "flavio": 0, "st": 0, "ts": 6969, "utc": "2026-10-09T20:30:52Z"}, "ES": {"lula": 0, "flavio": 0, "st": 0, "ts": 9844, "utc": "2026-10-13T20:45:07Z"}, "GO": {"lula": 768, "flavio": 943, "st": 6, "ts": 15686, "utc": "2026-10-25T20:07:00Z"}, "MA": {"lula": 2228, "flavio": 709, "st": 19, "ts": 18093, "utc": "2026-10-25T20:07:00Z"}, "MG": {"lula": 0, "flavio": 0, "st": 0, "ts": 52062, "utc": "2026-10-13T20:46:47Z"}, "MS": {"lula": 0, "flavio": 0, "st": 0, "ts": 7106, "utc": "2026-10-13T20:46:57Z"}, "MT": {"lula": 0, "flavio": 0, "st": 0, "ts": 8287, "utc": "2026-10-13T20:47:07Z"}, "PA": {"lula": 22949, "flavio": 12343, "st": 179, "ts": 20827, "utc": "2026-10-25T20:07:00Z"}, "PB": {"lula": 0, "flavio": 0, "st": 0, "ts": 10712, "utc": "2026-10-13T20:48:07Z"}, "PE": {"lula": 0, "flavio": 0, "st": 0, "ts": 21418, "utc": "2026-10-25T20:07:00Z"}, "PI": {"lula": 0, "flavio": 0, "st": 0, "ts": 10225, "utc": "2026-10-13T20:48:27Z"}, "PR": {"lula": 0, "flavio": 0, "st": 0, "ts": 27142, "utc": "2026-10-13T20:48:38Z"}, "RJ": {"lula": 0, "flavio": 0, "st": 0, "ts": 37675, "utc": "2026-10-13T20:48:47Z"}, "RN": {"lula": 0, "flavio": 0, "st": 0, "ts": 8115, "utc": "2026-10-13T20:48:57Z"}, "RO": {"lula": 0, "flavio": 0, "st": 0, "ts": 4698, "utc": "2026-10-13T20:49:07Z"}, "RR": {"lula": 0, "flavio": 0, "st": 0, "ts": 1519, "utc": "2026-10-13T20:49:17Z"}, "RS": {"lula": 0, "flavio": 0, "st": 0, "ts": 27547, "utc": "2026-10-13T20:49:27Z"}, "SC": {"lula": 0, "flavio": 0, "st": 0, "ts": 17326, "utc": "2026-10-13T20:49:37Z"}, "SE": {"lula": 0, "flavio": 0, "st": 0, "ts": 5923, "utc": "2026-10-24T22:32:12Z"}, "SP": {"lula": 0, "flavio": 0, "st": 0, "ts": 103656, "utc": "2026-10-13T20:50:07Z"}, "TO": {"lula": 0, "flavio": 0, "st": 0, "ts": 4384, "utc": "2026-10-25T18:40:09Z"}}, "br": {"lula": 193574, "flavio": 142169, "st": 1225, "ts": 499248, "utc": "2026-10-25T20:06:31Z"}, "atualizado": "2026-10-25T20:07:00Z"};
+/* uf: [nome, região, coluna, linha] */
+var UF={RR:['Roraima','Norte',1,0],AP:['Amapá','Norte',2,0],AM:['Amazonas','Norte',1,1],PA:['Pará','Norte',2,1],MA:['Maranhão','Nordeste',3,1],CE:['Ceará','Nordeste',4,1],RN:['Rio Grande do Norte','Nordeste',5,1],
+AC:['Acre','Norte',0,2],RO:['Rondônia','Norte',1,2],MT:['Mato Grosso','Centro-Oeste',2,2],TO:['Tocantins','Norte',3,2],PI:['Piauí','Nordeste',4,2],PB:['Paraíba','Nordeste',5,2],
+MS:['Mato Grosso do Sul','Centro-Oeste',2,3],GO:['Goiás','Centro-Oeste',3,3],BA:['Bahia','Nordeste',4,3],PE:['Pernambuco','Nordeste',5,3],AL:['Alagoas','Nordeste',6,3],
+DF:['Distrito Federal','Centro-Oeste',3,4],MG:['Minas Gerais','Sudeste',4,4],ES:['Espírito Santo','Sudeste',5,4],SE:['Sergipe','Nordeste',6,4],
+PR:['Paraná','Sul',3,5],SP:['São Paulo','Sudeste',4,5],RJ:['Rio de Janeiro','Sudeste',5,5],SC:['Santa Catarina','Sul',3,6],RS:['Rio Grande do Sul','Sul',2,6]};
+var REG=['Norte','Nordeste','Centro-Oeste','Sudeste','Sul'];
+var V=function(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()};
+function f(n){return n.toLocaleString('pt-PT')}
+function p(x){return x.toFixed(1).replace('.',',')+'%'}
+function hex(c){c=c.replace('#','');return[0,2,4].map(function(i){return parseInt(c.substr(i,2),16)})}
+function mix(a,b,t){var A=hex(a),B=hex(b);return '#'+A.map(function(v,i){var x=Math.round(v+(B[i]-v)*t);return(x<16?'0':'')+x.toString(16)}).join('')}
+function hm(t){var o={hour:'2-digit',minute:'2-digit',hourCycle:'h23'};
+ return t.toLocaleTimeString('pt-PT',Object.assign({timeZone:'America/Sao_Paulo'},o))+' Brasília · '+t.toLocaleTimeString('pt-PT',Object.assign({timeZone:'Europe/Lisbon'},o))+' Portugal'}
+function dayPT(t){return t.toLocaleDateString('pt-PT',{timeZone:'Europe/Lisbon',day:'2-digit',month:'2-digit',year:'numeric'})}
+var CUR=EMBED,SEL=null;
+function stat(r){var t=r.lula+r.flavio;return t?{t:t,l:100*r.lula/t,f:100*r.flavio/t}:{t:0,l:0,f:0}}
+function render(d){
+ CUR=d;
+ var st=document.getElementById('stamp');st.textContent='';
+ ['Dados do TSE: '+dayPT(new Date(d.atualizado))+' '+hm(new Date(d.atualizado)),'Página verificada às '+hm(new Date())].forEach(function(x){var s=document.createElement('span');s.textContent=x;st.appendChild(s)});
+ var b=d.br,s=stat(b),pg=100*b.st/b.ts,lead=b.lula>b.flavio?'Lula':'Flávio',w=0,fw=0;
+ var cl=0,cf=0;Object.keys(d.ufs).forEach(function(k){var r=d.ufs[k];if(r.lula+r.flavio){if(r.lula>r.flavio)cl++;else if(r.flavio>r.lula)cf++}});
+ document.getElementById('g').innerHTML='<h2>Brasil<span>total nacional, seções apuradas até agora</span></h2>'
+ +'<div class="big"><div><div class="l"><i class="sw" style="background:var(--lula)"></i>Lula</div><div class="n">'+p(s.l)+'</div><div class="v">'+f(b.lula)+' votos</div></div>'
+ +'<div><div class="l"><i class="sw" style="background:var(--flavio)"></i>Flávio Bolsonaro</div><div class="n">'+p(s.f)+'</div><div class="v">'+f(b.flavio)+' votos</div></div></div>'
+ +'<div class="bar"><i style="width:'+s.l+'%;background:var(--lula)"></i><i style="width:'+s.f+'%;background:var(--flavio)"></i></div>'
+ +'<div class="prog"><b>'+pg.toFixed(2).replace('.',',')+'%</b> das seções apuradas ('+f(b.st)+' de '+f(b.ts)+')'+(s.t?' · '+lead+' à frente por '+f(Math.abs(b.lula-b.flavio))+' votos':'')+'. Lula lidera em '+cl+' estados e Flávio em '+cf+'.</div>';
+ var land=V('--land'),lc=V('--lula'),fc=V('--flavio');
+ document.getElementById('gl').style.background='linear-gradient(90deg,'+land+',#8d9a96)';
+ var html='';Object.keys(UF).forEach(function(k){var u=UF[k],r=d.ufs[k]||{lula:0,flavio:0,st:0,ts:1},x=stat(r),zero=!x.t,col=land,txt='sem votos';
+  if(!zero){var win=r.lula>r.flavio?lc:fc,m=Math.abs(x.l-50)/50;col=mix(land,win,Math.min(1,0.25+1.5*m));txt=p(Math.max(x.l,x.f))}
+  var dark=!zero&&Math.abs(x.l-50)>12;
+  html+='<button type="button" class="t'+(zero?' zero':'')+(SEL===k?' sel':'')+'" data-k="'+k+'" style="grid-column:'+(u[2]+1)+';grid-row:'+(u[3]+1)+';background:'+col+(dark?';color:#fff':'')+'" aria-label="'+u[0]+': '+(zero?'sem votos apurados':'Lula '+p(x.l)+', Flávio '+p(x.f))+'"><b>'+k+'</b><small>'+(zero?'—':txt)+'</small><span class="pg"><i style="width:'+(100*r.st/r.ts)+'%"></i></span></button>'});
+ var T=document.getElementById('tiles');T.innerHTML=html;
+ T.querySelectorAll('.t').forEach(function(e){e.onclick=function(){SEL=SEL===e.dataset.k?null:e.dataset.k;render(CUR)}});
+ var D=document.getElementById('detail');
+ if(SEL){var u=UF[SEL],r=d.ufs[SEL],x=stat(r);D.innerHTML='<h3>'+u[0]+' ('+SEL+')</h3>'+(x.t?'Lula '+f(r.lula)+' votos ('+p(x.l)+')<br>Flávio '+f(r.flavio)+' votos ('+p(x.f)+')<br>':'Ainda sem votos apurados.<br>')+'Seções apuradas: '+f(r.st)+' de '+f(r.ts)+' ('+(100*r.st/r.ts).toFixed(1).replace('.',',')+'%)'}
+ else D.innerHTML='<h3>Toque num estado</h3>Mostra os votos de cada candidato e quantas seções já foram apuradas. A barrinha em baixo de cada quadrado mostra o avanço da apuração.';
+ var out='';REG.forEach(function(g){var items=Object.keys(UF).filter(function(k){return UF[k][1]===g}).sort(function(a,c){return stat(d.ufs[c]||{lula:0,flavio:0}).t-stat(d.ufs[a]||{lula:0,flavio:0}).t});
+  out+='<section><h2>'+g+'</h2>';
+  items.forEach(function(k){var r=d.ufs[k]||{lula:0,flavio:0},x=stat(r),z=!x.t;
+   out+='<div class="row'+(z?' zero':'')+'" title="'+UF[k][0]+'"><span class="name">'+UF[k][0]+'</span><div class="bar">'+(z?'':'<i style="width:'+x.l+'%;background:var(--lula)"></i><i style="width:'+x.f+'%;background:var(--flavio)"></i>')+'</div><span class="pct">'+(z?'sem votos':p(x.l)+' / '+p(x.f))+'</span></div>'});
+  out+='</section>'});
+ document.getElementById('c').innerHTML=out;
+ document.getElementById('mapnote').textContent='Quadrados cinzentos são estados sem votos apurados ainda. Quanto menor a margem, mais perto do cinza.';
+}
+function load(){fetch('data.json?'+Date.now()).then(function(r){if(!r.ok)throw 0;return r.json()}).then(render).catch(function(){})}
+render(EMBED);load();setInterval(load,600000);
+</script>
+</body>
+</html>
