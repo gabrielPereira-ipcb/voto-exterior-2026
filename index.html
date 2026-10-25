@@ -1,0 +1,144 @@
+<title>Voto no exterior 2026</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+/* layout: hero com totais, mapa de países coloridos pelo líder com bolhas, depois um painel por continente. Paleta oceano e coral */
+:root{--bg:#eaf3f4;--panel:#ffffff;--sea:#a9d3ea;--land:#eef0ea;--grid:#c3d8dc;--fg:#12303a;--muted:#4d6c75;--lula:#d9482b;--flavio:#0f8f84;--display:'Fraunces',Georgia,serif;--body:'IBM Plex Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,monospace;color-scheme:light}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--display);font-size:32px;margin:0;text-wrap:balance}
+.sub{color:var(--muted);font-size:14px;line-height:1.5;margin:6px 0 0;max-width:65ch}
+.stamp{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:8px}
+section{background:var(--panel);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:8px;min-width:0}
+h2{font-family:var(--display);font-size:18px;margin:0 0 6px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+h2 span{font-family:var(--mono);font-size:12px;color:var(--muted);font-weight:400}
+.hero{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.big{display:flex;flex-direction:column;gap:2px;min-width:0}
+.big b{font-family:var(--display);font-size:clamp(28px,7vw,46px);line-height:1}
+.big small{font-size:13px;color:var(--muted)}
+.big.l b{color:var(--lula)}.big.f{text-align:right}.big.f b{color:var(--flavio)}
+.hbar{position:relative;height:26px;display:flex;gap:3px;margin:6px 0}
+.hbar i{display:block;height:100%}
+.hbar i:first-child{background:var(--lula);border-radius:6px 0 0 6px}
+.hbar i:last-child{background:var(--flavio);border-radius:0 6px 6px 0}
+.hbar::after,.bar::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--fg);opacity:.55}
+.row{display:grid;grid-template-columns:minmax(90px,150px) 1fr 128px;gap:10px;align-items:center;font-size:13px;min-width:0}
+.bar{position:relative;height:16px;display:flex;gap:2px}
+.bar i{display:block;height:100%}
+.bar i:first-child{background:var(--lula);border-radius:3px 0 0 3px}
+.bar i:last-child{background:var(--flavio);border-radius:0 3px 3px 0}
+.pct{font-family:var(--mono);font-size:12px;text-align:right;white-space:nowrap;color:var(--muted)}
+.pct b{color:var(--fg);font-weight:500}
+.row:hover{background:color-mix(in srgb,var(--grid) 45%,transparent)}
+.name{overflow-wrap:anywhere;font-weight:500}
+.note{font-size:12.5px;color:var(--muted);line-height:1.55;max-width:70ch;margin:0}
+.note a{color:inherit}
+#map{position:relative;width:100%;max-width:100%;background:var(--sea);border-radius:8px;overflow:hidden}
+#map svg{display:block;max-width:100%}
+.legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--muted)}
+.legend .g{display:inline-block;width:70px;height:10px;border-radius:3px;margin:0 6px;vertical-align:-1px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.datamaps-bubble{filter:drop-shadow(0 0 3px rgba(0,0,0,.45))}
+.hoverinfo{pointer-events:none}
+#mapwrap{position:relative}
+#map{cursor:grab}
+#map:active{cursor:grabbing}
+.zoom{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:4px;z-index:5}
+.zoom button{width:32px;height:32px;border:1px solid var(--grid);border-radius:6px;background:var(--panel);color:var(--fg);font:500 18px/1 var(--body);cursor:pointer}
+.zoom button:hover{background:var(--bg)}
+.zoom button:focus-visible{outline:2px solid var(--flavio);outline-offset:1px}
+</style>
+<main>
+<header>
+<h1>Voto dos brasileiros no exterior, 2º turno</h1>
+<p class="sub">Lula contra Flávio Bolsonaro, por país e continente. Apuração parcial, ainda sem totais finais.</p>
+<div class="stamp" id="stamp"></div>
+</header>
+<section id="g"></section>
+<section id="mapsec"><h2>Mapa<span>cor do país = quem lidera · bolha = votos</span></h2><div id="mapwrap"><div id="map"></div><div class="zoom"><button type="button" id="zi" aria-label="Aproximar">+</button><button type="button" id="zo" aria-label="Afastar">&minus;</button><button type="button" id="zr" aria-label="Voltar ao mapa inteiro">&#8634;</button></div></div>
+<div class="legend"><span><i class="sw" style="background:var(--lula)"></i>Lula lidera</span><span><i class="sw" style="background:var(--flavio)"></i>Flávio lidera</span><span>Margem: pequena<i class="g" id="gl"></i>grande</span></div>
+<p class="note" id="mapnote"></p></section>
+<div id="c" style="display:flex;flex-direction:column;gap:20px"></div>
+<p class="note">Fonte: <a href="https://www.terra.com.br/noticias/brasil/voto-no-exterior-veja-os-resultados-por-pais-e-a-apuracao-de-lula-x-flavio-no-2-turno-das-eleicoes-2026,aae0e93358687b5353bbc9149d1316e7v48izs4z.html">Terra, com boletins de urna do TSE</a>. Países com poucos votos (Romênia, Croácia, Chipre) mudam muito com uma urna. Países Baixos e Polônia vieram com números idênticos na fonte e ficaram de fora até conferência. As Américas ainda não aparecem na fonte. A página recarrega os dados a cada 10 minutos. Continentes são agrupados por mim: Oriente Médio entra em Ásia, Chipre em Europa, Egito em África.</p>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/1.6.9/topojson.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/datamaps/0.5.9/datamaps.world.min.js"></script>
+<script>
+var EMBED={"atualizado":"25/10/2026 15h19","fonte":"Terra, boletins de urna do TSE","paises":[{"nome":"Espanha","iso":["ESP"],"lat":40,"lon":-4,"lula":9293,"flavio":4289,"continente":"Europa"},{"nome":"Irlanda","iso":["IRL"],"lat":53,"lon":-8,"lula":7194,"flavio":1776,"continente":"Europa"},{"nome":"Suíça","iso":["CHE"],"lat":46.8,"lon":8.2,"lula":7089,"flavio":5419,"continente":"Europa"},{"nome":"Suécia","iso":["SWE"],"lat":62,"lon":15,"lula":2127,"flavio":591,"continente":"Europa"},{"nome":"Bélgica e Luxemburgo","iso":["BEL","LUX"],"lat":50.6,"lon":4.7,"lula":3064,"flavio":2154,"continente":"Europa"},{"nome":"Áustria","iso":["AUT"],"lat":47.5,"lon":14.5,"lula":1178,"flavio":393,"continente":"Europa"},{"nome":"Dinamarca","iso":["DNK"],"lat":56,"lon":10,"lula":1383,"flavio":243,"continente":"Europa"},{"nome":"Noruega","iso":["NOR"],"lat":61,"lon":9,"lula":820,"flavio":248,"continente":"Europa"},{"nome":"Finlândia","iso":["FIN"],"lat":62,"lon":26,"lula":550,"flavio":185,"continente":"Europa"},{"nome":"República Tcheca","iso":["CZE"],"lat":49.8,"lon":15.5,"lula":304,"flavio":86,"continente":"Europa"},{"nome":"Hungria","iso":["HUN"],"lat":47,"lon":19.5,"lula":355,"flavio":117,"continente":"Europa"},{"nome":"Grécia","iso":["GRC"],"lat":39,"lon":22,"lula":255,"flavio":311,"continente":"Europa"},{"nome":"Estônia","iso":["EST"],"lat":58.7,"lon":25.5,"lula":160,"flavio":33,"continente":"Europa"},{"nome":"Eslovênia","iso":["SVN"],"lat":46.1,"lon":14.8,"lula":67,"flavio":28,"continente":"Europa"},{"nome":"Eslováquia","iso":["SVK"],"lat":48.7,"lon":19.7,"lula":47,"flavio":14,"continente":"Europa"},{"nome":"Sérvia","iso":["SRB"],"lat":44,"lon":21,"lula":35,"flavio":13,"continente":"Europa"},{"nome":"Romênia","iso":["ROU"],"lat":45.9,"lon":25,"lula":40,"flavio":25,"continente":"Europa"},{"nome":"Croácia","iso":["HRV"],"lat":45.1,"lon":15.2,"lula":31,"flavio":26,"continente":"Europa"},{"nome":"Chipre","iso":["CYP"],"lat":35,"lon":33,"lula":29,"flavio":25,"continente":"Europa"},{"nome":"Japão","iso":["JPN"],"lat":36,"lon":138,"lula":7098,"flavio":28538,"continente":"Ásia (inclui Oriente Médio)"},{"nome":"China","iso":["CHN"],"lat":35,"lon":103,"lula":375,"flavio":134,"continente":"Ásia (inclui Oriente Médio)"},{"nome":"Hong Kong","iso":["HKG"],"lat":22.3,"lon":114.2,"lula":127,"flavio":133,"continente":"Ásia (inclui Oriente Médio)"},{"nome":"Coreia do Sul","iso":["KOR"],"lat":36.5,"lon":128,"lula":148,"flavio":82,"continente":"Ásia (inclui Oriente Médio)"},{"nome":"Taiwan","iso":["TWN"],"lat":23.7,"lon":121,"lula":94,"flavio":130,"continente":"Ásia (inclui Oriente Médio)"},{"nome":"Singapura","iso":["SGP"],"lat":1.35,"lon":103.8,"lula":213,"flavio":121,"continente":"Ásia (inclui Oriente Médio)"},{"nome":"Tailândia","iso":["THA"],"lat":15,"lon":101,"lula":56,"flavio":60,"continente":"Ásia (inclui Oriente Médio)"},{"nome":"Malásia","iso":["MYS"],"lat":4,"lon":102,"lula":41,"flavio":44,"continente":"Ásia (inclui Oriente Médio)"},{"nome":"Filipinas","iso":["PHL"],"lat":12.9,"lon":122,"lula":27,"flavio":39,"continente":"Ásia (inclui Oriente Médio)"},{"nome":"Indonésia","iso":["IDN"],"lat":-2,"lon":118,"lula":15,"flavio":23,"continente":"Ásia (inclui Oriente Médio)"},{"nome":"Israel","iso":["ISR"],"lat":31,"lon":35,"lula":166,"flavio":699,"continente":"Ásia (inclui Oriente Médio)"},{"nome":"Palestina","iso":["PSE"],"lat":31.9,"lon":35.2,"lula":1000,"flavio":46,"continente":"Ásia (inclui Oriente Médio)"},{"nome":"Líbano","iso":["LBN"],"lat":33.9,"lon":35.9,"lula":1205,"flavio":175,"continente":"Ásia (inclui Oriente Médio)"},{"nome":"Jordânia","iso":["JOR"],"lat":31,"lon":36.5,"lula":725,"flavio":76,"continente":"Ásia (inclui Oriente Médio)"},{"nome":"Emirados Árabes Unidos","iso":["ARE"],"lat":24,"lon":54,"lula":643,"flavio":772,"continente":"Ásia (inclui Oriente Médio)"},{"nome":"Catar","iso":["QAT"],"lat":25.3,"lon":51.2,"lula":159,"flavio":195,"continente":"Ásia (inclui Oriente Médio)"},{"nome":"Turquia","iso":["TUR"],"lat":39,"lon":35,"lula":98,"flavio":29,"continente":"Ásia (inclui Oriente Médio)"},{"nome":"Síria","iso":["SYR"],"lat":35,"lon":38.5,"lula":106,"flavio":11,"continente":"Ásia (inclui Oriente Médio)"},{"nome":"Kuwait","iso":["KWT"],"lat":29.3,"lon":47.6,"lula":62,"flavio":17,"continente":"Ásia (inclui Oriente Médio)"},{"nome":"Arábia Saudita","iso":["SAU"],"lat":24,"lon":45,"lula":49,"flavio":31,"continente":"Ásia (inclui Oriente Médio)"},{"nome":"Angola","iso":["AGO"],"lat":-12.3,"lon":17.5,"lula":167,"flavio":118,"continente":"África"},{"nome":"Egito","iso":["EGY"],"lat":26.8,"lon":30.8,"lula":60,"flavio":16,"continente":"África"},{"nome":"Quênia","iso":["KEN"],"lat":0.2,"lon":37.9,"lula":29,"flavio":16,"continente":"África"},{"nome":"Moçambique","iso":["MOZ"],"lat":-18.7,"lon":35.5,"lula":108,"flavio":117,"continente":"África"},{"nome":"África do Sul","iso":["ZAF"],"lat":-29,"lon":24,"lula":186,"flavio":256,"continente":"África"},{"nome":"Austrália","iso":["AUS"],"lat":-25,"lon":134,"lula":6017,"flavio":3465,"continente":"Oceania"},{"nome":"Nova Zelândia","iso":["NZL"],"lat":-41,"lon":174,"lula":418,"flavio":101,"continente":"Oceania"}]};
+var f=function(n){return n.toLocaleString('pt-BR')},p=function(x){return x.toFixed(1).replace('.',',')+'%'};
+var V=function(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()};
+function hex(c){c=c.replace('#','');if(c.length==3)c=c.replace(/./g,'$&$&');return[0,2,4].map(function(i){return parseInt(c.substr(i,2),16)})}
+function mix(a,b,t){var A=hex(a),B=hex(b);return '#'+A.map(function(v,i){var x=Math.round(v+(B[i]-v)*t);return(x<16?'0':'')+x.toString(16)}).join('')}
+function hm(t){var o={hour:'2-digit',minute:'2-digit',hourCycle:'h23'};
+ return t.toLocaleTimeString('pt-PT',Object.assign({timeZone:'America/Sao_Paulo'},o))+' Brasília · '+t.toLocaleTimeString('pt-PT',Object.assign({timeZone:'Europe/Lisbon'},o))+' Portugal'}
+function srcPT(s){var m=/(\d+)\/(\d+)\/(\d+)\s+(\d+)h(\d+)/.exec(s);if(!m)return s;
+ var t=new Date(Date.UTC(+m[3],+m[2]-1,+m[1],+m[4]+3,+m[5]));/* a fonte usa a hora de Brasília (UTC-3) */
+ return m[1]+'/'+m[2]+'/'+m[3]+' '+hm(t)}
+var CUR=EMBED,MAP=null,ZK=1,ZT=[0,0],ZW=0;
+function render(d){
+ CUR=d;var P=d.paises;
+ document.getElementById('stamp').textContent='Dados da fonte: '+srcPT(d.atualizado)+' · página verificada às '+hm(new Date());
+ var TL=0,TF=0,WL=0,WF=0,JL=0,JF=0;
+ P.forEach(function(r){TL+=r.lula;TF+=r.flavio;if(r.lula>r.flavio)WL++;else WF++;if(r.nome=='Japão'){JL=r.lula;JF=r.flavio}});
+ var TT=TL+TF,lp=100*TL/TT,xl=TL-JL,xf=TF-JF,xp=100*xl/(xl+xf);
+ document.getElementById('g').innerHTML='<h2>Geral, todos os países apurados<span>'+f(TT)+' votos em '+P.length+' países</span></h2>'
+ +'<div class="hero"><div class="big l"><b>'+p(lp)+'</b><small>Lula · '+f(TL)+' votos · '+WL+' países</small></div><div class="big f"><b>'+p(100-lp)+'</b><small>Flávio Bolsonaro · '+f(TF)+' votos · '+WF+' países</small></div></div>'
+ +'<div class="hbar"><i style="width:'+lp+'%"></i><i style="width:'+(100-lp)+'%"></i></div>'
+ +'<p class="note">'+(TL>TF?'Lula':'Flávio')+' está à frente por '+f(Math.abs(TL-TF))+' votos. O Japão sozinho deu a Flávio '+f(JF-JL)+' votos de vantagem; sem o Japão, Lula teria '+p(xp)+' contra '+p(100-xp)+'.</p>';
+ var by={},order=[];P.forEach(function(r){if(!by[r.continente]){by[r.continente]=[];order.push(r.continente)}by[r.continente].push(r)});
+ var out='';
+ order.forEach(function(k){
+  var rows=by[k].slice().sort(function(a,b){return b.lula-a.lula}),L=0,F=0;rows.forEach(function(r){L+=r.lula;F+=r.flavio});
+  out+='<section><h2>'+k+'<span>soma parcial: Lula '+p(100*L/(L+F))+' · Flávio '+p(100*F/(L+F))+'</span></h2>';
+  rows.forEach(function(r){var t=r.lula+r.flavio,l=100*r.lula/t,w=l>=50;
+   out+='<div class="row" title="'+r.nome+': Lula '+f(r.lula)+' votos, Flávio '+f(r.flavio)+' votos"><span class="name">'+r.nome+'</span><div class="bar"><i style="width:'+l+'%"></i><i style="width:'+(100-l)+'%"></i></div><span class="pct">'+(w?'<b>'+p(l)+'</b>':p(l))+' / '+(w?p(100-l):'<b>'+p(100-l)+'</b>')+'</span></div>'});
+  out+='</section>'});
+ document.getElementById('c').innerHTML=out;
+ drawMap(P);
+}
+function drawMap(P){
+ var box=document.getElementById('map');box.innerHTML='';
+ if(typeof Datamap==='undefined'){document.getElementById('mapsec').hidden=true;return}
+ var land=V('--land'),lc=V('--lula'),fc=V('--flavio'),panel=V('--panel'),dark='#12303a';
+ document.getElementById('gl').style.background='linear-gradient(90deg,'+land+','+mix(land,lc,1)+')';
+ var W=box.clientWidth||800,H=Math.round(W/2.7),LAT0=11;
+ box.style.height=H+'px';
+ var fills={defaultFill:land,L:lc,F:fc},data={},bub=[];
+ P.forEach(function(r){var t=r.lula+r.flavio,m=Math.abs(r.lula/t-0.5),lead=r.lula>r.flavio?lc:fc,col=mix(land,lead,Math.min(1,0.3+1.4*m));
+  r.iso.forEach(function(i){fills[i]=col;data[i]={fillKey:i}});
+  bub.push({name:r.nome,latitude:r.lat,longitude:r.lon,radius:Math.max(3,Math.sqrt(t)/6),fillKey:r.lula>r.flavio?'L':'F',highlightFillColor:mix(lead,dark,0.25),highlightBorderColor:dark,l:r.lula,f:r.flavio,t:t})});
+ bub.sort(function(a,b){return b.radius-a.radius});
+ MAP=new Datamap({element:box,responsive:true,width:W,height:H,aspectRatio:H/W,fills:fills,data:data,
+  setProjection:function(el){var s=W/(2*Math.PI),pr=d3.geo.equirectangular().scale(s).rotate([0,0]).translate([W/2,H/2+LAT0*s*Math.PI/180]);return{path:d3.geo.path().projection(pr),projection:pr}},
+  geographyConfig:{borderColor:V('--sea'),borderWidth:0.4,highlightOnHover:false,popupOnHover:false},
+  bubblesConfig:{borderWidth:1.5,borderColor:'#ffffff',fillOpacity:0.88,popupOnHover:true,highlightOnHover:true,highlightBorderWidth:2.5,highlightFillOpacity:1,
+   popupTemplate:function(g,d){return '<div style="background:'+panel+';color:'+V('--fg')+';border:1px solid '+V('--grid')+';border-radius:6px;padding:8px 10px;font:12px '+V('--body')+'"><b>'+d.name+'</b><br>Lula '+f(d.l)+' ('+p(100*d.l/d.t)+')<br>Flávio '+f(d.f)+' ('+p(100*d.f/d.t)+')</div>'}}});
+ box.style.paddingBottom='0';box.style.height=H+'px';
+ MAP.bubbles(bub);
+ var svg=d3.select(box).select('svg'),zm=d3.behavior.zoom().scaleExtent([1,14]);
+ function applyZ(s,t){
+  t=[Math.min(0,Math.max(W-W*s,t[0])),Math.min(0,Math.max(H-H*s,t[1]))];
+  ZK=s;ZT=t;zm.scale(s).translate(t);
+  svg.selectAll('.datamaps-subunits, .bubbles').attr('transform','translate('+t+')scale('+s+')');
+  svg.selectAll('.datamaps-subunit').style('stroke-width',0.4/s);
+  svg.selectAll('circle.datamaps-bubble').attr('r',function(d){return d.radius/Math.sqrt(s)}).style('stroke-width',1.5/Math.sqrt(s));
+ }
+ zm.on('zoom',function(){applyZ(d3.event.scale,d3.event.translate)});
+ svg.call(zm).on('dblclick.zoom',null);
+ ['wheel','mousewheel'].forEach(function(n){box.addEventListener(n,function(e){if(!e.ctrlKey&&!e.metaKey)e.stopPropagation()},true)});
+ function by(k){var s=Math.max(1,Math.min(14,ZK*k)),c=[W/2,H/2];applyZ(s,[c[0]-(c[0]-ZT[0])*s/ZK,c[1]-(c[1]-ZT[1])*s/ZK])}
+ document.getElementById('zi').onclick=function(){by(1.6)};
+ document.getElementById('zo').onclick=function(){by(1/1.6)};
+ document.getElementById('zr').onclick=function(){applyZ(1,[0,0])};
+ if(ZK>1&&ZW===W)applyZ(ZK,ZT);else{ZK=1;ZT=[0,0];ZW=W}
+ document.getElementById('mapnote').textContent='O Japão é a maior bolha porque tem o maior bloco de eleitores fora do Brasil. Países com margem pequena ficam quase da cor da terra. Zoom: botões + e −, Ctrl + roda do mouse ou pinça no telemóvel; arraste para mover.';
+}
+var RT=null,LW=0;
+window.addEventListener('resize',function(){var w=document.getElementById('map').clientWidth;if(!w||w===LW)return;clearTimeout(RT);RT=setTimeout(function(){LW=w;drawMap(CUR.paises)},200)});
+function load(){
+ fetch('data.json?'+Date.now()).then(function(r){if(!r.ok)throw 0;return r.json()}).then(render).catch(function(){if(CUR===EMBED&&!window.__first){}});
+}
+render(EMBED);window.__first=1;
+load();setInterval(load,600000);
+</script>
